@@ -1,0 +1,126 @@
+---
+title: "Chapter 3"
+output: github_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 5)
+library(tidyverse)
+library(socviz)
+library(gapminder)
+library(here)
+```
+
+I received Kieran Healy's *Data Visualization* book for Christmas so will be going through each chapter and highlighting some pointers for making ggplots that I will be able to use for future reference.
+
+The following visualizations look at the [Gapminder] (https://www.gapminder.org/) dataset which includes data on life expectancy, GDP per capita, and population by country.
+
+```{r}
+head(gapminder)
+```
+It's important to note that the data is in a "tidy" and "long" format, which is the easiest structure for creating plots in ggplot2.
+
+
+
+## Graph 1
+
+```{r}
+p <- ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp))
+p + geom_point()
+```
+
+I'd like to see which countries represent the outliers in this graph.  
+
+```{r}
+gapminder[which.min(gapminder$lifeExp),]
+gapminder[which(gapminder$country=="Rwanda"),]
+```
+The country with the lowest life expectancy is Rwanda but they only have 12 observations so that may be skewing the data significantly. 
+
+```{r}
+gapminder[which.max(gapminder$lifeExp),]
+gapminder[which.max(gapminder$gdpPercap),]
+```
+The country with the highest life expectancy is Japan and the country with the maximum gdpPercap is Kuwait.
+
+## Graph 2
+
+```{r}
+p + geom_point(color = "gray", alpha = 0.3) + 
+    geom_smooth(method = "gam", se = FALSE, color = "orange") +
+    scale_x_log10(labels = scales::dollar) +
+    labs(x = "GDP Per Capita", y = "Life Expectancy in Years",
+        title = "Economic Growth and Life Expectancy",
+        subtitle = "Data points are country-years",
+        caption = "Source: Gapminder") +
+    theme(panel.background = element_blank(),
+          axis.line = element_line(size = 0.5, linetype = "solid", color = "gray"))
+```
+          
+
+```{r include=FALSE}
+ggsave(here("figures", "lifeexp_vs_gradient_gam.jpg"))
+```
+
+- The scales package has a handy function ```dollar``` that converts the x-axis to dollars. 
+- The ```element_blank``` function can be used to get rid of unwanted grids, backgrounds, etc
+
+## Graph 3
+
+Mapping aesthetics can be used both in the initial ggplot call and in the individual geoms. BUt remember that if it is called in the initial call, then all geoms layered on top of the original plot object will inherit that object's mappings. 
+
+```{r}
+p + geom_point(mapping = aes(color = continent)) +
+    geom_smooth(method = "loess", se = FALSE) +
+    scale_x_log10(labels = scales::dollar) +
+    labs(x = "GDP Per Capita", y = "Life Expectancy in Years",
+        title = "Economic Growth and Life Expectancy",
+        subtitle = "Data points are country-years",
+        caption = "Source: Gapminder") +
+    theme(panel.background = element_blank(),
+          axis.line = element_line(size = 0.5, linetype = "solid", color = "gray"))
+```
+
+```{r include=FALSE}
+ggsave(here("figures", "lifeexp_vs_gradient_loess_bycontinent.jpg"))
+```
+
+
+Color can also be mapped to a continuous variable to create a continouos color gradient.
+
+```{r}
+p + geom_point(mapping = aes(color = log(pop))) +
+    geom_smooth(method = "loess", se = FALSE, color = "orange") +
+    scale_x_log10(labels = scales::dollar) +
+    labs(x = "GDP Per Capita", y = "Life Expectancy in Years",
+        title = "Economic Growth and Life Expectancy",
+        subtitle = "Data points are country-years",
+        caption = "Source: Gapminder") +
+    theme(panel.background = element_blank(),
+          axis.line = element_line(size = 0.5, linetype = "solid", color = "gray"))
+
+```
+```{r include=FALSE}
+ggsave(here("figures", "lifeexp_vs_gradient_loess_bypop.jpg"))
+```
+
+
+
+# Graph 4
+
+```{r}
+p2 <- ggplot(data = gapminder, mapping = aes(x = pop, y = lifeExp))
+p2 + geom_point(mapping = aes(color = factor(year))) +
+  scale_x_log10(labels = scales::comma) +
+    labs(x = "Population", y = "Life Expectancy in Years",
+        title = "Population and Life Expectancy",
+                caption = "Source: Gapminder") +
+    theme(panel.background = element_blank(),
+          axis.line = element_line(size = 0.5, linetype = "solid", color = "gray"))
+
+ 
+```
+```{r include=FALSE}
+ggsave(here("figures", "pop_vs_gradient_loess_byyear.jpg"))
+```
+
+Year seems to play a big role in life expectancy regardless of the continent. Life expectancy goes up when looking at later years.

@@ -1,0 +1,114 @@
+---
+title: "Chapter 4"
+author: "Rika Gorn"
+date: "December 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 5, warning = FALSE)
+library(tidyverse)
+library(socviz)
+library(gapminder)
+library(here)
+library(scales)
+```
+
+## Grouping in ggplot
+
+Looking again at the gapminder data, what if we'd like to group by country, and then plot life expectancy over time. We can group the data first or maybe we can group the data directly in the call to ggplot? Let's give it a try using ```geom_line```.
+
+```{r}
+p <- ggplot(data = gapminder, mapping = aes(x = year, y = gdpPercap))
+p + geom_line(aes(group = country))
+```
+
+Each line represents a country with Kuwait being the outlier line, though the number of countries makes the chart nearly unreadable. Let's separate the chart into multiples using ```facet_wrap()```.
+
+```{r}
+p <- ggplot(data = gapminder, mapping = aes(x = year, y = gdpPercap))
+p + geom_line(aes(group = country)) + facet_wrap(~continent)
+```
+
+This is looking a little better and now I'm very curious about the country in Asia where gdp went down over time. 
+
+```{r}
+gapminder %>% 
+    select(continent, country, gdpPercap) %>%
+    filter(continent == "Asia") %>% 
+    group_by(country) %>%
+    summarise(mean = mean(gdpPercap)) %>% 
+    arrange(mean)
+```
+
+Interesting! Myanmar's gdp per capita goes down over time; I'm guessing as a result of the military dictatorship that took over in the 1960's. Ok, let's clean up our chart a bit and add some elements and a smoother line.
+
+```{r fig.width = 12, fig.height = 5}
+p <- ggplot(data = gapminder, mapping = aes(x = year, y = gdpPercap))
+p + geom_line(aes(group = country), color = "gray70") + 
+    geom_smooth(size = 1.1, method = "loess", se = FALSE) +
+    scale_y_log10(labels = scales::dollar) +
+    facet_wrap(~continent, ncol = 5) +
+    labs(x = "Year",
+         y = "GDP per capita",
+         title = "GDP per Capita on Five Continents")
+```
+
+```{r echo=FALSE}
+ggsave(here("figures", "GDP per capita on Five Continents.jpg"))
+
+```
+## New Data and Transforming Data
+
+The next few charts use data from the 2016 General Social Survey or GSS which contains a variety of categorical variables that we can transform.
+
+```{r}
+glimpse(gss_sm)
+```
+
+##Graph 1
+
+```{r warning=FALSE}
+p <- ggplot(data = gss_sm, mapping = aes(x = age, y = childs))
+p + geom_point(alpha = 0.2) +
+    geom_smooth() +
+    facet_grid(~ sex + race)
+```
+
+-Uses ```facet_grid``` rather than ```facet_wrap``` to summarize across multiple categorical variables
+
+-Adding an + in the grid function to the right side of the ~ includes additional variables with the column variable
+
+##Graph 2
+
+```{r}
+p <- ggplot(data = gss_sm, mapping = aes(x = bigregion)) 
+p + geom_bar()
+```
+
+-stat behind geom_bar is count
+
+-not the biggest fan of that little space above the x-axis but hopefully can find something that fixes that
+
+--expand_limits moves the chart to the right so that's not good and scale_y_continuous moves the chart up, so will see
+
+##Graph 3
+
+```{r}
+p + geom_bar(mapping = aes(y = ..prop.., group = 1)) +
+    scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1)) +
+    labs(x = "Region", y = NULL) +
+    guides(fill = FALSE)
+    
+```
+
+-Important to put group = 1 otherwise get all the bars with a height of 1.0
+-Loving the ```scales``` package which easily changes the labels to percent and scales my axis to 100%
+-Not specifiying the fill as a factor gives you a continuous color scale which is not what we want here 
+
+##Graph 4
+
+
+
+
+
